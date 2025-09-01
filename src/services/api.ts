@@ -438,6 +438,70 @@ export async function getStripeSessionUrl(token: string): Promise<string> {
 }
 
 /**
+ * 获取今日使用量统计信息
+ * @author SM
+ * @param token 认证令牌
+ * @param teamId 团队ID，默认为0
+ * @returns 今日使用量统计响应数据
+ */
+export async function fetchTodayUsage(token: string, teamId?: number): Promise<{ totalCents: number, totalUSD: number }> {
+    try {
+        log('[API] Fetching today usage...');
+        
+        // 获取今日的00:00:00和23:59:59时间戳
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+        const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+        
+        const startTimestamp = startDate.getTime();
+        const endTimestamp = endDate.getTime();
+        
+        log(`[API] Today usage date range: ${startDate.toISOString()} (${startTimestamp}) to ${endDate.toISOString()} (${endTimestamp})`);
+        
+        // 构建请求参数
+        const requestPayload = {
+            teamId: teamId || 0,
+            startDate: startTimestamp.toString(),
+            endDate: endTimestamp.toString(),
+            page: 1,
+            pageSize: 100
+        };
+        
+        log('[API] Today usage request payload:', requestPayload);
+        
+        const response = await axios.post('https://cursor.com/api/dashboard/get-filtered-usage-events', 
+            requestPayload,
+            {
+                headers: createCursorHeaders(token, true)
+            }
+        );
+        
+        // 计算今日使用总金额（美分相加后转换为美元）
+        let totalCents = 0;
+        if (response.data.usageEventsDisplay && Array.isArray(response.data.usageEventsDisplay)) {
+            for (const event of response.data.usageEventsDisplay) {
+                if (event.tokenUsage && event.tokenUsage.totalCents) {
+                    totalCents += event.tokenUsage.totalCents;
+                }
+            }
+        }
+        
+        const totalUSD = totalCents / 100;
+        
+        log(`[API] Today usage response: totalCents=${totalCents}, totalUSD=${totalUSD.toFixed(2)}`);
+        return { totalCents, totalUSD };
+    } catch (error: any) {
+        log('[API] Error fetching today usage: ' + error.message, true);
+        log('[API] Today usage API error details: ' + JSON.stringify({
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message
+        }), true);
+        throw error;
+    }
+}
+
+/**
  * 获取Token使用统计信息
  * @author SM
  * @param token 认证令牌

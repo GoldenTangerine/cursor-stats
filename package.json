@@ -2,7 +2,7 @@
   "name": "cursor-stats",
   "displayName": "Cursor Stats",
   "description": "A Cursor extension for monitoring usage.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "Dwtexe",
   "icon": "images/icon.png",
   "repository": {
@@ -197,7 +197,12 @@
           "cursorStats.showTotalRequests": {
             "type": "boolean",
             "default": false,
-            "description": "Show total requests (fast requests + usage-based requests) in the status bar.",
+            "description": "Show total requests (fast requests + usage-based requests) in the status bar."
+          },
+          "cursorStats.showTodayUsage": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show today's usage amount in the status bar after the remaining percentage.",
             "scope": "window"
           },
           "cursorStats.spendingAlertThreshold": {
@@ -378,8 +383,7 @@
             "default": true,
             "description": "Show changelog popup and update notifications when the extension is updated to a new version.",
             "scope": "window"
-          }
-          ,
+          },
           "cursorStats.smartUsageMonitorEnabled": {
             "type": "boolean",
             "default": true,

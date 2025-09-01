@@ -11,7 +11,7 @@
 
 import { log } from './logger';
 import { getCursorTokenFromDB } from '../services/database';
-import { checkUsageBasedStatus, fetchCursorStats, fetchTokenUsageStats } from '../services/api';
+import { checkUsageBasedStatus, fetchCursorStats, fetchTokenUsageStats, fetchTodayUsage } from '../services/api';
 import { checkAndNotifyUsage, checkAndNotifySpending, checkAndNotifyUnpaidInvoice, checkAndNotifySmartUsageMonitor } from '../handlers/notifications';
 import { formatRemainingPercentage, formatPercentageIntelligent } from './percentageFormatter';
 import { calculateRemainingDaysFromPeriod, formatRemainingDaysText, getRemainingDaysIcon, shouldShowRemainingDays } from './remainingDays';
@@ -93,8 +93,25 @@ export async function updateStats(statusBarItem: vscode.StatusBarItem) {
                 
                 log(`[Stats] Token mode - Used: ${formattedUsedCost}, Max: ${formattedMaxCost}, Remaining: ${formattedRemainingPercent}%`);
                 
-                // 状态栏显示：使用金额/最大金额 剩余百分比%
-                statusBarItem.text = `$(credit-card) ${formattedUsedCost}/${formattedMaxCost} ${t('statusBar.remaining')}${formattedRemainingPercent}%`;
+                // 检查是否显示今日使用量
+                const showTodayUsage = vscode.workspace.getConfiguration('cursorStats').get<boolean>('showTodayUsage', true);
+                let todayUsageText = '';
+                let todayUsage: { totalCents: number, totalUSD: number } | null = null;
+                
+                if (showTodayUsage) {
+                    try {
+                        // 获取今日使用量
+                        todayUsage = await fetchTodayUsage(token, teamInfo.teamId);
+                        todayUsageText = ` • ${t('statusBar.today')}: $${todayUsage.totalUSD.toFixed(2)}`;
+                        log(`[Stats] Today usage: $${todayUsage.totalUSD.toFixed(2)}`);
+                    } catch (error: any) {
+                        log(`[Stats] Failed to fetch today usage: ${error.message}`, true);
+                        // 如果获取今日使用量失败，不影响主要显示
+                    }
+                }
+                
+                // 状态栏显示：使用金额/最大金额 剩余百分比% • 今日: $X.XX
+                statusBarItem.text = `$(credit-card) ${formattedUsedCost}/${formattedMaxCost} ${t('statusBar.remaining')}${formattedRemainingPercent}%${todayUsageText}`;
                 
                 // 根据使用百分比设置颜色
                 statusBarItem.color = getStatusBarColor(usagePercent);
@@ -105,6 +122,14 @@ export async function updateStats(statusBarItem: vscode.StatusBarItem) {
                     '',
                     `💳 ${t('statusBar.totalCost') || 'Total Cost'}: ${formattedUsedCost}/${formattedMaxCost}`,
                     `📊 ${Math.round(usagePercent)}% ${t('statusBar.utilized') || 'Utilized'} • ${formattedRemainingPercent}% ${t('statusBar.remaining') || 'Remaining'}`,
+                ];
+                
+                // 如果显示今日使用量，添加到tooltip中
+                if (showTodayUsage && todayUsage) {
+                    tooltipLines.push(`📅 ${t('statusBar.today')}: $${todayUsage.totalUSD.toFixed(2)}`);
+                }
+                
+                tooltipLines.push(
                     '',
                     `🔢 ${t('statusBar.totalTokens') || 'Total Tokens'}:`,
                     `   • ${t('statusBar.inputTokens') || 'Input'}: ${tokenStats.totalInputTokens}`,
@@ -113,7 +138,7 @@ export async function updateStats(statusBarItem: vscode.StatusBarItem) {
                     `   • ${t('statusBar.cacheWrite') || 'Cache Write'}: ${tokenStats.totalCacheWriteTokens}`,
                     '',
                     '📋 **Model Breakdown**'
-                ];
+                );
                 
                 // 添加每个模型的详细信息
                 for (const aggregation of tokenStats.aggregations) {
