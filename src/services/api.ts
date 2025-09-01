@@ -484,6 +484,8 @@ export async function fetchTokenUsageStats(token: string, teamId?: number): Prom
         );
         
         log(`[API] Token usage stats response: totalCostCents=${response.data.totalCostCents}, aggregations=${response.data.aggregations.length}`);
+        // 打印response.data
+        log('[API] Token usage stats response data:', response.data);
         return response.data;
     } catch (error: any) {
         log('[API] Error fetching token usage stats: ' + error.message, true);
