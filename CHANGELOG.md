@@ -2,6 +2,27 @@
 
 All notable changes to the "cursor-stats" extension will be documented in this file.
 
+## [1.2.1] - 2025-01-28
+
+### Added
+- 📅 **Today's Usage Display**: New feature to show daily spending in token mode
+  - New setting `cursorStats.showTodayUsage` (enabled by default)
+  - Status bar format: `$used/$max Remaining XX% • Today: $X.XX`
+  - Tooltip includes today's usage information for quick reference
+- 🔧 **Enhanced Token API**: Fixed POST request implementation with proper parameters
+  - Correctly handles teamId, startDate, and endDate parameters
+  - Improved error handling and fallback mechanisms
+
+### Changed
+- **Token Mode Status Bar**: Enhanced display format with today's usage integration
+- **Configuration Defaults**: Updated default values for better user experience
+- **Error Handling**: Improved fallback when token API encounters issues
+
+### Technical Improvements
+- Fixed token API endpoint to use POST method with proper request body
+- Enhanced date range calculation for token usage statistics
+- Better integration between token mode and team membership detection
+
 ## [1.2.0] - 2025-01-28
 
 ### Added
